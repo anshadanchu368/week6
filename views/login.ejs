@@ -3,17 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Login</title>
 </head>
-<body>
-    <h1>Login</h1>
-    <form action="/" method="POST">
-        <label for="username">Username:</label>
-        <input type="text" id="username" name="username" required>
-        <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required>
-        <button type="submit">Login</button>
-    </form>
-    <p>Don't have an account? <a href="/signup">Signup</a></p>
+<body style="font-family: Arial, sans-serif; text-align: center; margin-top: 50px;">
+    <div>
+        <h1>Login</h1>
+        <form action="/" method="POST" style="display: inline-block; text-align: left; border: 1px solid #ccc; padding: 20px; border-radius: 5px;">
+            <label for="username" style="margin-bottom: 10px;">Username:</label>
+            <input type="text" id="username" name="username" required style="width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 3px; border: 1px solid #ccc;">
+            <label for="password" style="margin-bottom: 10px;">Password:</label>
+            <input type="password" id="password" name="password" required style="width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 3px; border: 1px solid #ccc;">
+            <button type="submit" style="background-color: #007bff; color: #fff; padding: 10px 20px; border: none; border-radius: 3px; cursor: pointer;">Login</button>
+        </form>
+        <p style="margin-top: 20px;">Don't have an account? <a href="/signup" style="color: #007bff; text-decoration: none;">Signup</a></p>
+    </div>
 </body>
 </html>
