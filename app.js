@@ -2,7 +2,7 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const session = require("express-session");
-const MongoStore = require("connect-mongo")(session);
+const MongoStore=require("connect-mongo");
 
 // Initialize Express app
 const app = express();
@@ -23,15 +23,17 @@ mongoose
 //session handle
 
 app.use(
-  session({
-    secret: "secret",
-    resave: false,
-    saveUninitialized: true,
-    store: new MongoStore({ mongooseConnection: mongoose.connection }),
-  })
-);
+    session({
+      secret: "secret",
+      resave: false,
+      saveUninitialized: true,
+      store: MongoStore.create({
+         mongoUrl:"mongodb://127.0.0.1:27017/usersix"
+      })
+    })
+  );
 
-/
+
 
 // Define user schema and model
 const userSchema = new mongoose.Schema({
@@ -55,28 +57,38 @@ app.get("/", (req, res) => {
   res.render("login");
 });
 
-app.post("/", (req, res) => {
-  const { username, password } = req.body;
+app.post("/", async (req, res) => {
+    const { username, password } = req.body;
 
-  const admin = Admin.findOne({ username, password });
-  if (admin) {
-    req.session.admin = admin;
-    res.redirect("/admin/dashboard");
-    return;
-  }
+    // Check if the user is an admin
+    const admin = await Admin.findOne({ username, password });
+    if (admin) {
+        req.session.admin = admin;
+        res.redirect("/admin/dashboard");
+        return;
+    }
 
+    // Check if the user is an existing user
+    const existingUser = await User.findOne({ username });
+    if (existingUser) {
+        // User exists, attempt login
+        if (existingUser.password === password) {
+            req.session.user = existingUser;
+            console.log("User logged in successfully");
+            res.render("home");
+            return;
+        } else {
+            // Incorrect password, redirect to login page
+            console.log("Incorrect password for existing user");
+            res.redirect("/");
+            return;
+        }
+    }
 
-  const user = User.findOne({ username, password })
-    .then(() => {
-      console.log("user logged in succesfully");
-      req.session.user = user;
-      res.render("home");
-    })
-    .catch((err) => {
-      console.log(err);
-      res.redirect("/signup");
-    });
+    // No existing user found, redirect to signup page
+    res.redirect("/signup");
 });
+
 
 app.get("/signup", (req, res) => {
   res.render("signup");
@@ -100,14 +112,29 @@ app.post("/signup", (req, res) => {
 // admin authentication
 
 const isAdminAuthenticated = (req,res,next)=>{
-    if(!req.session.admin){
+    if(req.session.admin){
         next()
     }else{
         res.redirect("/")
     }
 }
 
-app.get("/admin/dashboard",isAdminAuthenticated,(req,res)=>{
+app.post("/admin/login", async (req, res) => {
+    const { username, password } = req.body;
+    
+    // Check if the provided credentials match the default admin credentials
+    const admin = await Admin.findOne({ username, password });
+    if (admin) {
+        // Create a session for the admin
+        req.session.admin = admin;
+        res.redirect("/admin/dashboard"); // Redirect to admin dashboard
+    } else {
+        res.status(401).send("Unauthorized access"); // Send 401 Unauthorized status with a message
+    }
+});
+
+
+app.get("/admin/dashboard",isAdminAuthenticated,async(req,res)=>{
     if(req.session.admin){
         const users=await User.find();
         res.render("admin_dashboard",{users})
@@ -118,25 +145,27 @@ app.get("/admin/dashboard",isAdminAuthenticated,(req,res)=>{
 
 app.post("/admin/search", isAdminAuthenticated, async (req, res) => {
     try {
-        const { searchQuery } = req.body;
-        if (!searchQuery) {
-            // Handle empty search query
-            return res.redirect('/admin/dashboard');
-        }
-        const regex = new RegExp(searchQuery, 'i');
-        const users = await User.find({ username: { $regex: regex } });
-        res.render("admin_dashboard", { users, searchQuery });
+      const { searchQuery } = req.body;
+      if (!searchQuery) {
+        return res.redirect('/admin/dashboard');
+      }
+  
+     
+      const escapedQuery = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  
+      const regex = new RegExp(escapedQuery, 'i');
+      const users = await User.find({ username: { $regex: regex } });
+      res.render("admin_dashboard", { users, searchQuery });
     } catch (error) {
-        console.error("Error searching users:", error);
-        res.status(500).send("Internal Server Error");
+      console.error("Error searching users:", error);
+      res.status(500).send("Internal Server Error");
     }
-});
+  });
 
 
-
-app.post("/admin/create",isAdminAuthenticated,(req,res)=>{
+app.post("/admin/create",isAdminAuthenticated,async (req,res)=>{
     const {username,password}=req.body;
-    const newUser=new User({username,password});
+    const newUser=await new User({username,password});
     newUser.save();
     res.redirect("/admin/dashboard");
 })
