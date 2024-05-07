@@ -146,11 +146,8 @@ app.get("/admin/dashboard",isAdminAuthenticated,async(req,res)=>{
 app.post("/admin/search", isAdminAuthenticated, async (req, res) => {
     try {
       const { searchQuery } = req.body;
-      if (!searchQuery) {
-        return res.redirect('/admin/dashboard');
-      }
-  
-     
+    
+
       const escapedQuery = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   
       const regex = new RegExp(escapedQuery, 'i');
@@ -170,16 +167,16 @@ app.post("/admin/create",isAdminAuthenticated,async (req,res)=>{
     res.redirect("/admin/dashboard");
 })
 
-app.post("/admin/delete/:id",isAdminAuthenticated,(req,res)=>{
+app.post("/admin/delete/:id",isAdminAuthenticated,async(req,res)=>{
     const {id}=req.params;
-    User.findByIdAndDelete(id);
+    await User.findByIdAndDelete(id);
     res.redirect("/admin/dashboard");
 })
 
-app.post("/admin/edit/:id",isAdminAuthenticated,(req,res)=>{
+app.post("/admin/edit/:id",isAdminAuthenticated,async(req,res)=>{
     const {id} =req.params;
     const {username,password}=req.body;
-    User.findByIdAndUpdate(id,{username,password})
+    await User.findByIdAndUpdate(id,{username,password})
     res.redirect("/admin/dashboard")
 })
 
